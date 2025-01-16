@@ -1,8 +1,25 @@
 import sys # Used for access to command line arguments
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
-from PySide6.QtCore import Qt, QRect
+from datetime import datetime
 
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
+from PySide6.QtWidgets import QPlainTextEdit # Logger
+from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPalette, QColor
+
+
+class Logger(QPlainTextEdit):
+    def __init__(self, include_timestamp=False):
+        super().__init__()
+        self._include_timestamp = include_timestamp;
+        self.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.setReadOnly(True)
+
+    def add(self, msg):
+        if(self._include_timestamp):
+            timestamp = datetime.now().strftime("%m/%d/%Y %H:%M")
+            self.appendPlainText(timestamp + ":  " + msg)
+        else:
+            self.appendPlainText(msg)
 
 class Color(QWidget):
     def __init__(self, color):
@@ -20,6 +37,8 @@ class MainWindow(QMainWindow):
         self.resize(1000, 600)
         #self.setMouseTracking(True) # This causes mouse move events w/o holding down the button
 
+        self.log = Logger()
+
         # Build the UI
         self.setup_docking_panels()
         
@@ -28,6 +47,8 @@ class MainWindow(QMainWindow):
 
         # Setup complete
         self.statusBar().showMessage("Ready")
+        self.log.add("Test")
+        self.log.add("Test 2")
 
     def setup_docking_panels(self):
         # Dummy widgets to show panels
@@ -49,7 +70,7 @@ class MainWindow(QMainWindow):
 
         self.log_dock = QDockWidget("Log", self)
         self.log_dock.setFeatures(QDockWidget.DockWidgetMovable)
-        self.log_dock.setWidget(blue)
+        self.log_dock.setWidget(self.log)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
 
         # Give side docks priority to fill the window height
