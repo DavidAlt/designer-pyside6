@@ -1,7 +1,8 @@
 import sys # Used for access to command line arguments
 from datetime import datetime
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget, QMenuBar
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QPlainTextEdit # Logger
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPalette, QColor
@@ -20,6 +21,10 @@ class Logger(QPlainTextEdit):
             self.appendPlainText(timestamp + ":  " + msg)
         else:
             self.appendPlainText(msg)
+
+    # Clearing the log: inherits clear()
+
+
 
 class Color(QWidget):
     def __init__(self, color):
@@ -40,6 +45,7 @@ class MainWindow(QMainWindow):
         self.log = Logger()
 
         # Build the UI
+        self.create_menu()
         self.setup_docking_panels()
         
         # The canvas will be the application's central widget
@@ -47,8 +53,24 @@ class MainWindow(QMainWindow):
 
         # Setup complete
         self.statusBar().showMessage("Ready")
-        self.log.add("Test")
-        self.log.add("Test 2")
+
+    def create_menu(self):
+        # Create the menubar 
+        menubar = self.menuBar() 
+        
+        # Add File menu 
+        file_menu = menubar.addMenu("File") 
+        new_action = QAction("New", self) 
+        open_action = QAction("Open", self) 
+        save_action = QAction("Save", self) 
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        
+        file_menu.addAction(new_action) 
+        file_menu.addAction(open_action) 
+        file_menu.addAction(save_action) 
+        file_menu.addSeparator() 
+        file_menu.addAction(exit_action)
 
     def setup_docking_panels(self):
         # Dummy widgets to show panels
@@ -83,7 +105,9 @@ class MainWindow(QMainWindow):
         
         # Only show one bottom panel control, others in tabs
         # Whichever is listed last will be shown on startup
-        self.tabifyDockWidget(self.obj_list_dock, self.log_dock)        
+        self.tabifyDockWidget(self.obj_list_dock, self.log_dock)     
+
+
 
     def mouseMoveEvent(self, e): # This overrides the parent event
         x = e.globalX() # These are screen coordinates, not MainWindow
