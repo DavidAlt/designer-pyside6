@@ -1,7 +1,7 @@
 import sys # Used for access to command line arguments
 from datetime import datetime
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget, QMenuBar
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QPlainTextEdit # Logger
 from PySide6.QtCore import Qt, QRect
