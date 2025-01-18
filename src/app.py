@@ -78,22 +78,25 @@ class MainWindow(QMainWindow):
         toolbar = QToolBar("Main Toolbar")
         self.addToolBar(toolbar)
 
-        # Create actions and add them to the toolbar. Actions work like buttons.
+        # Create actions and connect them to functions. Actions work like buttons.
         base_widget_action = QAction(QIcon("assets/icons/application--plus.png"), "Base Widget", self)
         base_widget_action.setStatusTip("Base Widget")
         base_widget_action.triggered.connect(self.on_base_widget_action)
-        toolbar.addAction(base_widget_action)
-
+        
         reset_action = QAction(QIcon("assets/icons/cross.png"), "Reset", self)
         reset_action.setStatusTip("Reset")
         reset_action.triggered.connect(self.on_reset_action)
+
+        # Add the actions
+        toolbar.addAction(base_widget_action)
+        toolbar.addSeparator()
         toolbar.addAction(reset_action)
 
     def on_base_widget_action(self):
         self.log.add("on_base_widget_action")
 
     def on_reset_action(self):
-        self.log.add("on_reset_action")
+        self.log.clear()
 
 
     def setup_docking_panels(self):
