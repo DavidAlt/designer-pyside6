@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
 
     def create_toolbar(self):
         toolbar = QToolBar("Main Toolbar")
+        toolbar.toggleViewAction().setEnabled(False) # prevent user from hiding toolbar
         self.addToolBar(toolbar)
 
         # Create actions and connect them to functions. Actions work like buttons.
