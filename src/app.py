@@ -6,8 +6,9 @@ from PySide6.QtWidgets import QToolBar
 from PySide6.QtGui import QAction, QIcon # Menus
 from PySide6.QtWidgets import QPlainTextEdit # Logger
 from PySide6.QtCore import Qt, QRect
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtGui import QPalette, QColor, QBrush, QPen
 
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem
 
 class Logger(QPlainTextEdit):
     def __init__(self, include_timestamp=False):
@@ -26,7 +27,7 @@ class Logger(QPlainTextEdit):
     # Clearing the log: inherits clear()
 
 
-
+# temp - remove once dock panels populated
 class Color(QWidget):
     def __init__(self, color):
         super().__init__()
@@ -35,6 +36,33 @@ class Color(QWidget):
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(color))
         self.setPalette(palette)
+
+# no custom functionality yet
+class CanvasRectItem(QGraphicsRectItem):
+    def __init__(self, x, y, width, height, *args, **kwargs):
+        super().__init__(x, y, width, height, *args, **kwargs)
+
+
+class Canvas(QGraphicsView):
+    def __init__(self, parent=None):
+        self.scene = QGraphicsScene(0, 0, 400, 300) # starting size
+        super().__init__(self.scene, parent)
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.setBackgroundBrush(QBrush(QColor(Qt.GlobalColor.lightGray)))
+
+    def add_item(self, x, y, width, height, brush_color, pen_color):
+        rect = CanvasRectItem(0, 0, width, height)
+        rect.setPos(x, y)
+        rect.setBrush(QBrush(brush_color))
+        rect.setPen(QPen(pen_color, 2))
+        rect.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
+        self.scene.addItem(rect)
+
+    # reset the scene dimensions based on the items it contains (with a little padding)
+    def update_scene_size(self):
+        items_rect = self.scene.itemsBoundingRect()
+        self.scene.setSceneRect(items_rect.adjusted(-10, -10, 10, 10))
+    
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -51,7 +79,8 @@ class MainWindow(QMainWindow):
         self.setup_docking_panels()
         
         # The canvas will be the application's central widget
-        self.setCentralWidget(Color("black")) # replace with canvas
+        self.canvas = Canvas()
+        self.setCentralWidget(self.canvas) # replace with canvas
 
         # Setup complete
         self.statusBar().showMessage("Ready")
@@ -88,17 +117,25 @@ class MainWindow(QMainWindow):
         reset_action.setStatusTip("Reset")
         reset_action.triggered.connect(self.on_reset_action)
 
+        test_action = QAction("Test", self)
+        test_action.triggered.connect(self.on_test_action)
+
         # Add the actions
         toolbar.addAction(base_widget_action)
         toolbar.addSeparator()
         toolbar.addAction(reset_action)
+        toolbar.addAction(test_action)
 
     def on_base_widget_action(self):
         self.log.add("on_base_widget_action")
+        self.canvas.add_item(10, 10, 50, 50, Qt.GlobalColor.red, Qt.GlobalColor.blue)    
 
     def on_reset_action(self):
         self.log.clear()
 
+    def on_test_action(self):
+        self.log.add(f"View size: {self.canvas.viewport().width()}, {self.canvas.viewport().height()}")
+        self.log.add(f"Scene size: {self.canvas.scene.sceneRect().width()}, {self.canvas.scene.sceneRect().height()}")
 
     def setup_docking_panels(self):
         # Dummy widgets to show panels
