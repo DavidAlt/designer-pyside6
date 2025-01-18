@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
 from PySide6.QtWidgets import QToolBar
 from PySide6.QtGui import QAction, QIcon # Menus
 from PySide6.QtWidgets import QPlainTextEdit # Logger
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, Signal
 from PySide6.QtGui import QPalette, QColor, QBrush, QPen
 
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem
@@ -44,11 +44,16 @@ class CanvasRectItem(QGraphicsRectItem):
 
 
 class Canvas(QGraphicsView):
+    # Signals
+    cursor_position_changed = Signal(float, float)
+
     def __init__(self, parent=None):
+        super().__init__(parent)
         self.scene = QGraphicsScene(0, 0, 400, 300) # starting size
-        super().__init__(self.scene, parent)
+        self.setScene(self.scene)
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.setBackgroundBrush(QBrush(QColor(Qt.GlobalColor.lightGray)))
+        self.setMouseTracking(True)
 
     def add_item(self, x, y, width, height, brush_color, pen_color):
         rect = CanvasRectItem(0, 0, width, height)
@@ -62,6 +67,16 @@ class Canvas(QGraphicsView):
     def update_scene_size(self):
         items_rect = self.scene.itemsBoundingRect()
         self.scene.setSceneRect(items_rect.adjusted(-10, -10, 10, 10))
+
+    # delete everything on the canvas
+    def reset(self):
+        self.scene.clear()
+
+    # Create a signal that emits the cursor position over the canvas
+    def mouseMoveEvent(self, event):
+        scene_pos = self.mapToScene(event.pos())
+        self.cursor_position_changed.emit(scene_pos.x(), scene_pos.y())
+        super().mouseMoveEvent(event)
     
 
 class MainWindow(QMainWindow):
@@ -69,8 +84,6 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Discern Prompt Designer")
         self.resize(1000, 600)
-        #self.setMouseTracking(True) # This causes mouse move events w/o holding down the button
-
         self.log = Logger()
 
         # Build the UI
@@ -80,6 +93,7 @@ class MainWindow(QMainWindow):
         
         # The canvas will be the application's central widget
         self.canvas = Canvas()
+        self.canvas.cursor_position_changed.connect(self.statusbar_show_canvas_coords)
         self.setCentralWidget(self.canvas) # replace with canvas
 
         # Setup complete
@@ -118,6 +132,7 @@ class MainWindow(QMainWindow):
         reset_action.triggered.connect(self.on_reset_action)
 
         test_action = QAction("Test", self)
+        test_action.setStatusTip("Test")
         test_action.triggered.connect(self.on_test_action)
 
         # Add the actions
@@ -132,6 +147,7 @@ class MainWindow(QMainWindow):
 
     def on_reset_action(self):
         self.log.clear()
+        self.canvas.reset()
 
     def on_test_action(self):
         self.log.add(f"View size: {self.canvas.viewport().width()}, {self.canvas.viewport().height()}")
@@ -170,18 +186,11 @@ class MainWindow(QMainWindow):
         
         # Only show one bottom panel control, others in tabs
         # Whichever is listed last will be shown on startup
-        self.tabifyDockWidget(self.obj_list_dock, self.log_dock)     
+        self.tabifyDockWidget(self.obj_list_dock, self.log_dock)  
 
-
-
-    def mouseMoveEvent(self, e): # This overrides the parent event
-        x = e.globalX() # These are screen coordinates, not MainWindow
-        y = e.globalY() # These are screen coordinates, not MainWindow
-        rx = e.x()
-        ry = e.y()
-        self.statusBar().showMessage(f"Global: {x}, {y}    Relative: {rx}, {ry}")
+    def statusbar_show_canvas_coords(self, x, y):
+        self.statusBar().showMessage(f"{int(x)}, {int(y)}")
         
-        #self.statusBar().showMessage("Ready")
 
 
 # You need one (and only one) QApplication instance per application.
