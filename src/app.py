@@ -1,8 +1,9 @@
 import sys # Used for access to command line arguments
-from datetime import datetime
+from datetime import datetime # Logger timestamps
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
-from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QToolBar
+from PySide6.QtGui import QAction, QIcon # Menus
 from PySide6.QtWidgets import QPlainTextEdit # Logger
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPalette, QColor
@@ -46,6 +47,7 @@ class MainWindow(QMainWindow):
 
         # Build the UI
         self.create_menu()
+        self.create_toolbar()
         self.setup_docking_panels()
         
         # The canvas will be the application's central widget
@@ -71,6 +73,28 @@ class MainWindow(QMainWindow):
         file_menu.addAction(save_action) 
         file_menu.addSeparator() 
         file_menu.addAction(exit_action)
+
+    def create_toolbar(self):
+        toolbar = QToolBar("Main Toolbar")
+        self.addToolBar(toolbar)
+
+        # Create actions and add them to the toolbar. Actions work like buttons.
+        base_widget_action = QAction(QIcon("assets/icons/application--plus.png"), "Base Widget", self)
+        base_widget_action.setStatusTip("Base Widget")
+        base_widget_action.triggered.connect(self.on_base_widget_action)
+        toolbar.addAction(base_widget_action)
+
+        reset_action = QAction(QIcon("assets/icons/cross.png"), "Reset", self)
+        reset_action.setStatusTip("Reset")
+        reset_action.triggered.connect(self.on_reset_action)
+        toolbar.addAction(reset_action)
+
+    def on_base_widget_action(self):
+        self.log.add("on_base_widget_action")
+
+    def on_reset_action(self):
+        self.log.add("on_reset_action")
+
 
     def setup_docking_panels(self):
         # Dummy widgets to show panels
