@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
 from PySide6.QtWidgets import QToolBar
 from PySide6.QtGui import QAction, QIcon # Menus
 from PySide6.QtWidgets import QPlainTextEdit # Logger
-from PySide6.QtCore import Qt, QRect, Signal
+from PySide6.QtCore import Qt, QRect, Signal, QRectF
 from PySide6.QtGui import QPalette, QColor, QBrush, QPen
 
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem
@@ -37,10 +37,27 @@ class Color(QWidget):
         palette.setColor(QPalette.Window, QColor(color))
         self.setPalette(palette)
 
-# no custom functionality yet
-class CanvasRectItem(QGraphicsRectItem):
-    def __init__(self, x, y, width, height, *args, **kwargs):
-        super().__init__(x, y, width, height, *args, **kwargs)
+class CanvasItem(QGraphicsItem):
+    def __init__(self, width, height):
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.setPos(25, 25)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable | 
+                      QGraphicsItem.ItemIsSelectable)
+
+    def paint(self, painter, option, widget):
+        # Draws a blue square
+        painter.setBrush(QBrush(Qt.GlobalColor.blue))
+        painter.drawRect(0, 0, self.width, self.height)
+
+        # If selected, draw a border
+        if self.isSelected():
+            painter.setPen(QPen(Qt.GlobalColor.magenta, 2))
+            painter.drawRect(self.boundingRect())
+
+    def boundingRect(self):
+        return QRectF(0, 0, self.width, self.height)
 
 
 class Canvas(QGraphicsView):
@@ -56,12 +73,8 @@ class Canvas(QGraphicsView):
         self.setMouseTracking(True)
 
     def add_item(self, x, y, width, height, brush_color, pen_color):
-        rect = CanvasRectItem(0, 0, width, height)
-        rect.setPos(x, y)
-        rect.setBrush(QBrush(brush_color))
-        rect.setPen(QPen(pen_color, 2))
-        rect.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
-        self.scene.addItem(rect)
+        item = CanvasItem(100, 50)
+        self.scene.addItem(item)
 
     # reset the scene dimensions based on the items it contains (with a little padding)
     def update_scene_size(self):
@@ -74,8 +87,18 @@ class Canvas(QGraphicsView):
 
     # Create a signal that emits the cursor position over the canvas
     def mouseMoveEvent(self, event):
-        scene_pos = self.mapToScene(event.pos())
+        scene_pos = self.mapToScene(event.pos()) # get cursor coords
+        
+        # Emit the cursor position (to display on statusbar)        
         self.cursor_position_changed.emit(scene_pos.x(), scene_pos.y())
+
+        # Get the items under the cursor
+        items = self.scene.items(scene_pos)
+        if items:
+            self.setCursor(Qt.CursorShape.DragMoveCursor)
+        else:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+
         super().mouseMoveEvent(event)
     
 
