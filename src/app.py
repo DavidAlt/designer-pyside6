@@ -1,4 +1,5 @@
 import sys # Used for access to command line arguments
+import math # Used for Canvas to calculate distance to item edge
 from datetime import datetime # Logger timestamps
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
@@ -95,12 +96,24 @@ class Canvas(QGraphicsView):
         # Get the items under the cursor
         items = self.scene.items(scene_pos)
         if items:
-            self.setCursor(Qt.CursorShape.DragMoveCursor)
+            for item in items:
+                bounds = item.boundingRect()
+                # Check if the cursor is over the right edge
+                if (abs(bounds.right() - (scene_pos.x() - item.pos().x())) < 5) and \
+                   (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) >= 5):
+                    self.setCursor(Qt.CursorShape.SizeHorCursor)
+                elif (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) < 5) and \
+                    (abs(bounds.right() - (scene_pos.x() - item.pos().x())) >= 5):
+                   self.setCursor(Qt.CursorShape.SizeVerCursor)
+                elif (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) < 5) and \
+                   (abs(bounds.right() - (scene_pos.x() - item.pos().x())) < 5):
+                   self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+                else: # You're in the interior of the item
+                    self.setCursor(Qt.CursorShape.ArrowCursor)
         else:
             self.setCursor(Qt.CursorShape.ArrowCursor)
 
         super().mouseMoveEvent(event)
-    
 
 class MainWindow(QMainWindow):
     def __init__(self):
