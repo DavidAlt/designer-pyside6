@@ -1,14 +1,10 @@
 import sys # Used for access to command line arguments
 from datetime import datetime # Logger timestamps
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
-from PySide6.QtWidgets import QToolBar
-from PySide6.QtGui import QAction, QIcon # Menus
-from PySide6.QtWidgets import QPlainTextEdit # Logger
-from PySide6.QtCore import Qt, Signal, QRectF
-from PySide6.QtGui import QPalette, QColor, QBrush, QPen
-
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem
+from PySide6.QtWidgets import QApplication, QMainWindow, QToolBar, QWidget, QDockWidget, QPlainTextEdit
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem
+from PySide6.QtGui import QAction, QIcon, QPalette, QColor, QBrush, QPen
+from PySide6.QtCore import Qt, Signal, QRect, QRectF
 
 class Logger(QPlainTextEdit):
     def __init__(self, include_timestamp=False):
