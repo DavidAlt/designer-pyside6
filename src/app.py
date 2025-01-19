@@ -1,12 +1,11 @@
 import sys # Used for access to command line arguments
-import math # Used for Canvas to calculate distance to item edge
 from datetime import datetime # Logger timestamps
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QDockWidget
 from PySide6.QtWidgets import QToolBar
 from PySide6.QtGui import QAction, QIcon # Menus
 from PySide6.QtWidgets import QPlainTextEdit # Logger
-from PySide6.QtCore import Qt, QRect, Signal, QRectF
+from PySide6.QtCore import Qt, Signal, QRectF
 from PySide6.QtGui import QPalette, QColor, QBrush, QPen
 
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem
