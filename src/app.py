@@ -59,6 +59,8 @@ class CanvasItem(QGraphicsItem):
         self.width = new_width
         self.height = new_height
 
+    def __str__(self):
+        return(f"{type(self)} (x: {self.pos().x()}, y: {self.pos().y()}, w: {self.width}, h: {self.height})")
 
 
 
@@ -78,6 +80,7 @@ class Canvas(QGraphicsView):
     def add_item(self, x, y, width, height, brush_color, pen_color):
         item = CanvasItem(width, height)
         self.scene.addItem(item)
+        print(str(item) + " added")
 
     def update_scene_size(self):
         items_rect = self.scene.itemsBoundingRect()
@@ -85,6 +88,11 @@ class Canvas(QGraphicsView):
 
     def reset(self):
         self.scene.clear()
+
+    def delete_selected_items(self):
+        for item in self.scene.selectedItems():
+            print(str(item) + " removed")
+            self.scene.removeItem(item)
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -187,6 +195,21 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator() 
         file_menu.addAction(exit_action)
 
+        # Add Canvas menu
+        canvas_menu = menubar.addMenu("Canvas")
+        reset_action = QAction("Reset", self)
+        reset_action.triggered.connect(self.on_reset_action)
+
+        canvas_menu.addAction(reset_action)
+
+        # Add Canvas Item menu
+        canvas_item_menu = menubar.addMenu("Canvas Item")
+        delete_item_action = QAction("Delete", self)
+        delete_item_action.setShortcut(Qt.Key_Delete)
+        delete_item_action.triggered.connect(self.on_delete_item)
+
+        canvas_item_menu.addAction(delete_item_action)
+
     def create_toolbar(self):
         toolbar = QToolBar("Main Toolbar")
         toolbar.toggleViewAction().setEnabled(False) # prevent user from hiding toolbar
@@ -218,6 +241,9 @@ class MainWindow(QMainWindow):
     def on_reset_action(self):
         self.log.clear()
         self.canvas.reset()
+
+    def on_delete_item(self):
+        self.canvas.delete_selected_items()
 
     def on_test_action(self):
         self.log.add(f"View size: {self.canvas.viewport().width()}, {self.canvas.viewport().height()}")
