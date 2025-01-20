@@ -41,13 +41,12 @@ class CanvasItem(QGraphicsItem):
         self.setPos(25, 25)
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable | 
                       QGraphicsItem.ItemIsSelectable)
+        self.setAcceptHoverEvents(True)
 
     def paint(self, painter, option, widget):
-        # Draws a blue square
         painter.setBrush(QBrush(Qt.GlobalColor.blue))
         painter.drawRect(0, 0, self.width, self.height)
 
-        # If selected, draw a border
         if self.isSelected():
             painter.setPen(QPen(Qt.GlobalColor.magenta, 2))
             painter.drawRect(self.boundingRect())
@@ -55,60 +54,100 @@ class CanvasItem(QGraphicsItem):
     def boundingRect(self):
         return QRectF(0, 0, self.width, self.height)
 
+    def resize(self, new_width, new_height):
+        self.prepareGeometryChange()
+        self.width = new_width
+        self.height = new_height
+
+
+
 
 class Canvas(QGraphicsView):
-    # Signals
     cursor_position_changed = Signal(float, float)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.scene = QGraphicsScene(0, 0, 400, 300) # starting size
+        self.scene = QGraphicsScene(0, 0, 400, 300)
         self.setScene(self.scene)
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.setBackgroundBrush(QBrush(QColor(Qt.GlobalColor.lightGray)))
         self.setMouseTracking(True)
+        self.resizing_item = None
+        self.resize_direction = None
 
     def add_item(self, x, y, width, height, brush_color, pen_color):
-        item = CanvasItem(100, 50)
+        item = CanvasItem(width, height)
         self.scene.addItem(item)
 
-    # reset the scene dimensions based on the items it contains (with a little padding)
     def update_scene_size(self):
         items_rect = self.scene.itemsBoundingRect()
         self.scene.setSceneRect(items_rect.adjusted(-10, -10, 10, 10))
 
-    # delete everything on the canvas
     def reset(self):
         self.scene.clear()
 
-    # Create a signal that emits the cursor position over the canvas
     def mouseMoveEvent(self, event):
-        scene_pos = self.mapToScene(event.pos()) # get cursor coords
-        
-        # Emit the cursor position (to display on statusbar)        
+        scene_pos = self.mapToScene(event.pos())
         self.cursor_position_changed.emit(scene_pos.x(), scene_pos.y())
 
-        # Get the items under the cursor
-        items = self.scene.items(scene_pos)
-        if items:
-            for item in items:
-                bounds = item.boundingRect()
-                # Check if the cursor is over the right edge
-                if (abs(bounds.right() - (scene_pos.x() - item.pos().x())) < 5) and \
-                   (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) >= 5):
-                    self.setCursor(Qt.CursorShape.SizeHorCursor)
-                elif (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) < 5) and \
-                    (abs(bounds.right() - (scene_pos.x() - item.pos().x())) >= 5):
-                   self.setCursor(Qt.CursorShape.SizeVerCursor)
-                elif (abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) < 5) and \
-                   (abs(bounds.right() - (scene_pos.x() - item.pos().x())) < 5):
-                   self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-                else: # You're in the interior of the item
-                    self.setCursor(Qt.CursorShape.ArrowCursor)
+        if self.resizing_item:
+            new_width = max(10, scene_pos.x() - self.resizing_item.pos().x())
+            new_height = max(10, scene_pos.y() - self.resizing_item.pos().y())
+            if self.resize_direction == "horizontal":
+                self.resizing_item.resize(new_width, self.resizing_item.height)
+            elif self.resize_direction == "vertical":
+                self.resizing_item.resize(self.resizing_item.width, new_height)
+            elif self.resize_direction == "both":
+                self.resizing_item.resize(new_width, new_height)
         else:
+            items = self.scene.items(scene_pos)
+            if items:
+                for item in items:
+                    if isinstance(item, CanvasItem):
+                        bounds = item.boundingRect()
+                        right_edge = abs(bounds.right() - (scene_pos.x() - item.pos().x())) < 5
+                        bottom_edge = abs(bounds.bottom() - (scene_pos.y() - item.pos().y())) < 5
+                        if right_edge and bottom_edge:
+                            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+                            return
+                        elif right_edge:
+                            self.setCursor(Qt.CursorShape.SizeHorCursor)
+                            return
+                        elif bottom_edge:
+                            self.setCursor(Qt.CursorShape.SizeVerCursor)
+                            return
             self.setCursor(Qt.CursorShape.ArrowCursor)
 
         super().mouseMoveEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            scene_pos = self.mapToScene(event.pos())
+            items = self.scene.items(scene_pos)
+            for item in items:
+                if isinstance(item, CanvasItem):
+                    #right_edge = abs(item.boundingRect().right() - (scene_pos.x() - item.pos().x())) < 5
+                    #bottom_edge = abs(item.boundingRect().bottom() - (scene_pos.y() - item.pos().y())) < 5
+                    if self.cursor().shape() == Qt.CursorShape.SizeHorCursor:
+                        self.resizing_item = item
+                        self.resize_direction = "horizontal"
+                        return
+                    elif self.cursor().shape() == Qt.CursorShape.SizeVerCursor:
+                        self.resizing_item = item
+                        self.resize_direction = "vertical"
+                        return
+                    elif self.cursor().shape() == Qt.CursorShape.SizeFDiagCursor:
+                        self.resizing_item = item
+                        self.resize_direction = "both"
+                        return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.resizing_item = None
+            self.resize_direction = None
+        super().mouseReleaseEvent(event)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
