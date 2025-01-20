@@ -152,9 +152,24 @@ class Canvas(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            if self.resizing_item:
+                # Enforce boundaries after resizing
+                new_pos = self.resizing_item.pos()
+                new_pos.setX(max(0, new_pos.x()))
+                new_pos.setY(max(0, new_pos.y()))
+                self.resizing_item.setPos(new_pos)
+            else:
+                # Enforce boundaries for moved items
+                for item in self.scene.selectedItems():
+                    new_pos = item.pos()
+                    new_pos.setX(max(0, new_pos.x()))
+                    new_pos.setY(max(0, new_pos.y()))
+                    item.setPos(new_pos)
+
             self.resizing_item = None
             self.resize_direction = None
         super().mouseReleaseEvent(event)
+
 
 
 class MainWindow(QMainWindow):
